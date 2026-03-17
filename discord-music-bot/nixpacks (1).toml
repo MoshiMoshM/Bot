@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["ffmpeg", "python311", "python311Packages.pip"]
+
+[phases.install]
+cmds = ["python3.11 -m venv .venv", ".venv/bin/pip install -r requirements.txt", "ln -sf $(which ffmpeg) /usr/local/bin/ffmpeg"]
+
+[start]
+cmd = ".venv/bin/python bot.py"
