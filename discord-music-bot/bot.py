@@ -18,7 +18,6 @@ FFMPEG_OPTIONS = {
     "executable": ffmpeg_path,
 }
 
-# Write cookies to temp file
 cookies_file = None
 cookies_content = os.getenv("YOUTUBE_COOKIES")
 if cookies_content:
@@ -30,14 +29,14 @@ if cookies_content:
 
 def get_ydl_opts(extract_flat=True):
     opts = {
-        "format": "bestaudio",
+        "format": "bestaudio/bestaudio*/best",
         "quiet": True,
         "no_warnings": True,
         "noplaylist": False,
         "extract_flat": "in_playlist" if extract_flat else False,
         "extractor_args": {
             "youtube": {
-                "player_client": ["ios", "android"],
+                "player_client": ["ios"],
             }
         },
     }
@@ -76,19 +75,19 @@ async def get_stream_url(url):
         opts = get_ydl_opts(False)
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
-            # Pick best audio format
             formats = info.get("formats", [])
-            audio_formats = [f for f in formats if f.get("acodec") != "none" and f.get("vcodec") == "none" and f.get("url")]
-            if audio_formats:
-                best = max(audio_formats, key=lambda f: f.get("abr") or 0)
+            # Try audio-only first
+            audio_only = [f for f in formats if f.get("acodec") != "none" and f.get("vcodec") == "none" and f.get("url")]
+            if audio_only:
+                best = max(audio_only, key=lambda f: f.get("abr") or 0)
                 return best["url"], info.get("title", "Unknown")
-            # Fallback to any format with audio
+            # Fallback to any with audio
             for f in reversed(formats):
                 if f.get("acodec") != "none" and f.get("url"):
                     return f["url"], info.get("title", "Unknown")
             if "url" in info:
                 return info["url"], info.get("title", "Unknown")
-            raise Exception("Не намерих аудио формат")
+            raise Exception("Не намерих аудио")
     return await loop.run_in_executor(None, _get)
 
 
